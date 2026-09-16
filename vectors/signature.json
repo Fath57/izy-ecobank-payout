@@ -1,0 +1,119 @@
+{
+  "note": "Generated from the reference implementation and checked by hand. A port is correct when it reproduces every expected value below. The secret key is fictitious.",
+  "secretKey": "test-secret-key-not-a-real-one",
+  "algorithm": "SHA-512 over UTF-8 bytes, lower-case hex, 128 characters. Plain concatenation then hash — NOT an HMAC.",
+  "cases": [
+    {
+      "name": "requestToken for a domestic transfer",
+      "formula": "SHA-512(clientId + affiliateCode + sourceCode + requestId + requestType + ipAddress + secretKey)",
+      "header": {
+        "affiliateCode": "EGH",
+        "clientId": "CL001",
+        "sourceCode": "CORP_CIB_MOBILE",
+        "requestId": "IZYABCDEFGH1234",
+        "ipAddress": "192.168.1.1",
+        "requestType": "DOMESTIC_TRANSFER"
+      },
+      "concatenated": "CL001EGHCORP_CIB_MOBILEIZYABCDEFGH1234DOMESTIC_TRANSFER192.168.1.1test-secret-key-not-a-real-one",
+      "expected": "4871ccc7d3290616750e5ab676927cf746789e42933610e9169862f8f10467704264a72b6f441faec5921505c0ff343a7b4c6284fbecd7faab620c259f6ed10f"
+    },
+    {
+      "name": "secureHash for a domestic transfer",
+      "formula": "SHA-512(<the six header values> + requestToken + receiverAccountNo + amountString + currency + description + secretKey)",
+      "header": {
+        "affiliateCode": "EGH",
+        "clientId": "CL001",
+        "sourceCode": "CORP_CIB_MOBILE",
+        "requestId": "IZYABCDEFGH1234",
+        "ipAddress": "192.168.1.1",
+        "requestType": "DOMESTIC_TRANSFER"
+      },
+      "requestToken": "4871ccc7d3290616750e5ab676927cf746789e42933610e9169862f8f10467704264a72b6f441faec5921505c0ff343a7b4c6284fbecd7faab620c259f6ed10f",
+      "fields": [
+        "1441002006858",
+        "10",
+        "GHS",
+        "Payout 42"
+      ],
+      "concatenated": "CL001EGHCORP_CIB_MOBILEIZYABCDEFGH1234DOMESTIC_TRANSFER192.168.1.14871ccc7d3290616750e5ab676927cf746789e42933610e9169862f8f10467704264a72b6f441faec5921505c0ff343a7b4c6284fbecd7faab620c259f6ed10f144100200685810GHSPayout 42test-secret-key-not-a-real-one",
+      "expected": "519c29de11c3fe694fcfb8ee2952de9a215076814a9b511967bd3f411583b852d5667926bf71c757b517530ba24fbf342feee7a9ba1dc32796b3e0d348792c46"
+    },
+    {
+      "name": "requestToken for a token request",
+      "header": {
+        "affiliateCode": "EGH",
+        "clientId": "CL001",
+        "sourceCode": "CORP_CIB_MOBILE",
+        "requestId": "IZYABCDEFGH1234",
+        "ipAddress": "192.168.1.1",
+        "requestType": "GET_API_TOKEN"
+      },
+      "concatenated": "CL001EGHCORP_CIB_MOBILEIZYABCDEFGH1234GET_API_TOKEN192.168.1.1test-secret-key-not-a-real-one",
+      "expected": "832451716bc313ca877fe677d8e1fe7f6efd0170ac12d5ba2184b1233c4b120879eea4f26166c24b4e8f0356d69e96598600dd2935524610889640175b18bc2f"
+    },
+    {
+      "name": "secureHash for a token request",
+      "header": {
+        "affiliateCode": "EGH",
+        "clientId": "CL001",
+        "sourceCode": "CORP_CIB_MOBILE",
+        "requestId": "IZYABCDEFGH1234",
+        "ipAddress": "192.168.1.1",
+        "requestType": "GET_API_TOKEN"
+      },
+      "requestToken": "832451716bc313ca877fe677d8e1fe7f6efd0170ac12d5ba2184b1233c4b120879eea4f26166c24b4e8f0356d69e96598600dd2935524610889640175b18bc2f",
+      "fields": [
+        "corp_public_sample",
+        "DOMESTIC"
+      ],
+      "concatenated": "CL001EGHCORP_CIB_MOBILEIZYABCDEFGH1234GET_API_TOKEN192.168.1.1832451716bc313ca877fe677d8e1fe7f6efd0170ac12d5ba2184b1233c4b120879eea4f26166c24b4e8f0356d69e96598600dd2935524610889640175b18bc2fcorp_public_sampleDOMESTICtest-secret-key-not-a-real-one",
+      "expected": "5678d5b24606e8c5b23cf696ca0fdf0e51c2b5ff169e035aa0fe470713efae323d9cbc695f3b386a1e9b9af955d665aac0fc4d0008617c4a0c9c711619a2cb22"
+    },
+    {
+      "name": "secureHash for a transaction status query",
+      "header": {
+        "affiliateCode": "EGH",
+        "clientId": "CL001",
+        "sourceCode": "CORP_CIB_MOBILE",
+        "requestId": "IZYABCDEFGH1234",
+        "ipAddress": "192.168.1.1",
+        "requestType": "TRANSACTION_STATUS"
+      },
+      "requestToken": "73506c75f4c989e3fca26a7bf58ad138c2e3816e34987d8972f7c737d34174bf4ad87a8fbd944f7b8fde688887e91a42190810762b0e80841e03364377238f0c",
+      "fields": [
+        "CORPGH242880000361"
+      ],
+      "concatenated": "CL001EGHCORP_CIB_MOBILEIZYABCDEFGH1234TRANSACTION_STATUS192.168.1.173506c75f4c989e3fca26a7bf58ad138c2e3816e34987d8972f7c737d34174bf4ad87a8fbd944f7b8fde688887e91a42190810762b0e80841e03364377238f0cCORPGH242880000361test-secret-key-not-a-real-one",
+      "expected": "4df0a4fcd219042b04a56b34026ba9939d0c01594af2150331af3729dd44c0cf0129fde70b85388c1f753d025a7bf31b1c370ca2c0c6d94aa30c4e1fc2e358f0"
+    },
+    {
+      "name": "TRAP — hashing in document order is wrong",
+      "why": "The payload starts affiliateCode then clientId; the hash starts clientId then affiliateCode. This value is what you get by concatenating the JSON top-down. A port that produces it has the order wrong.",
+      "wrongConcatenation": "EGHCL001CORP_CIB_MOBILEIZYABCDEFGH1234192.168.1.1DOMESTIC_TRANSFERtest-secret-key-not-a-real-one",
+      "mustNotEqual": "4871ccc7d3290616750e5ab676927cf746789e42933610e9169862f8f10467704264a72b6f441faec5921505c0ff343a7b4c6284fbecd7faab620c259f6ed10f",
+      "wrongValue": "de4ec95d58e549e2c23f1da1a8c50716d30f3490d327491717916a6bfe8f675d91b302733a97e559b446873c7eacbe6f1689a84d79dcab0097b6b1c994fcd3fe"
+    },
+    {
+      "name": "amountString rendering",
+      "why": "The amount is hashed as text and must match the JSON body. Several languages render a float as 50000.0 where JSON writes 50000.",
+      "samples": [
+        {
+          "amount": 50000,
+          "expected": "50000"
+        },
+        {
+          "amount": 1500.5,
+          "expected": "1500.5"
+        },
+        {
+          "amount": 10,
+          "expected": "10"
+        },
+        {
+          "amount": 0.75,
+          "expected": "0.75"
+        }
+      ]
+    }
+  ]
+}
