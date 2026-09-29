@@ -21,7 +21,7 @@ a docblock next to the code that depends on it.
 6. [Reading a response](#6-reading-a-response)
 7. [Behavioural rules that are not in the schema](#7-behavioural-rules-that-are-not-in-the-schema)
 8. [Using this package in PHP](#8-using-this-package-in-php)
-9. [The sandbox does not validate signatures](#9-the-sandbox-does-not-validate-signatures)
+9. [Whether signatures are validated depends on the app](#9-whether-signatures-are-validated-depends-on-the-app)
 10. [Known defects in Ecobank's documentation](#10-known-defects-in-ecobanks-documentation)
 11. [Open questions](#11-open-questions)
 12. [Porting checklist](#12-porting-checklist)
@@ -393,18 +393,39 @@ No `composer install` is needed: the package has no runtime dependencies and
 
 ---
 
-## 9. The sandbox does not validate signatures
+## 9. Whether signatures are validated depends on the app
 
-Measured on 13 Sep 2026 against `apimuat-gateway.ecobank.com`: a payload whose
-`requestId` was changed **without recomputing either hash** was answered
-`responseCode: "000"`, `SUCCESS`, with a fresh token.
+This section said flatly that the sandbox validates no signature. That was measured, and
+it was wrong as a general statement. Signature checking is **per client app**, and the
+demo app everyone starts with is the permissive one.
 
-The consequence for a port is the whole reason `vectors/signature.json` exists: **you can
-have a completely wrong `secureHash` and a green end-to-end run.** The sandbox will tell
-you that your transport, headers and payload shape are right. It will not tell you your
-signature is wrong, and production will.
+Measured on `apimuat-gateway.ecobank.com`, same gateway, same day:
 
-Check against the vectors, not against a 200.
+| Client app | Correct secret | Secret wrong by one character |
+| --- | --- | --- |
+| The documentation's demo app (`CL001`) | token issued | **token issued** — check skipped |
+| A real onboarded partner app | passes the hash check | `Invalid SecureHash or Request Token Provided` |
+
+So the demo credentials in Ecobank's own documentation will hand you a token no matter
+what you sign, while the credentials you are given at onboarding will not.
+
+Two consequences, and they pull in opposite directions:
+
+- **Do not conclude your signature is right because the sandbox accepted it.** If you are
+  testing with the demo app, it accepted everything. This is the whole reason
+  `vectors/signature.json` exists.
+- **Do not conclude your signature is wrong because a real app refused it.** The refusal
+  is specific — `Invalid SecureHash or Request Token Provided` — and it is a genuine,
+  useful signal. A different message (`Client App not Configured for Service`,
+  `No services has been setup for the client …`, `Invalid Key Provided`) means your
+  signature passed and something else is unconfigured.
+
+That last point is worth stating plainly, because it is the one good piece of news here:
+**a real app's error messages let you distinguish a signature problem from a provisioning
+problem.** The demo app cannot, because it never checks.
+
+Check against the vectors first. Then, once you have real credentials, a message that is
+not about the hash is positive evidence your implementation is correct.
 
 ---
 

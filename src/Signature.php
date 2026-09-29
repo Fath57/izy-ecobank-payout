@@ -33,10 +33,15 @@ namespace Izy\EcobankPayout;
  * 3. The amount is hashed as a string, and that string must match what lands in the JSON
  *    body. See amountString().
  *
- * None of this can be validated against the UAT sandbox: measured on 13 Sep 2026, it
- * accepts a payload whose fields were changed without recomputing either hash and answers
- * SUCCESS. A green round trip says nothing about a signature. The vectors are the only
- * check that exists before production.
+ * Whether the bank checks any of this depends on the client app, not on the environment.
+ * The demo app in Ecobank's own documentation (CL001) issues a token however you sign —
+ * measured 13 and 29 Sep 2026, a secret wrong by one character still returns SUCCESS. A
+ * real onboarded app answers `Invalid SecureHash or Request Token Provided` to the same
+ * mutation.
+ *
+ * So a green round trip against the demo credentials says nothing, and the vectors are
+ * the only check that exists until real credentials arrive. Once they do, the bank itself
+ * becomes the check: any error that is *not* about the hash means the signature passed.
  */
 final class Signature
 {

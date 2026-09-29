@@ -47,6 +47,8 @@ final class Client
 
     private readonly Payload $payload;
 
+    private readonly TokenStore $store;
+
     public function __construct(
         private readonly Configuration $config,
         private readonly ?Transport $transport = null,
@@ -54,6 +56,7 @@ final class Client
     ) {
         $this->config->assertComplete();
         $this->payload = new Payload($config);
+        $this->store = $tokens ?? new InMemoryTokenStore();
     }
 
     public function payload(): Payload
@@ -66,10 +69,9 @@ final class Client
      */
     public function token(string $serviceCode = ServiceCode::DOMESTIC): string
     {
-        $store = $this->tokens ?? $this->defaultTokens();
-        $key = 'ecobank.token.' . strtolower($serviceCode);
+        $key = $this->cacheKey($serviceCode);
 
-        if ($cached = $store->get($key)) {
+        if ($cached = $this->store->get($key)) {
             return $cached;
         }
 
@@ -84,7 +86,7 @@ final class Client
             );
         }
 
-        $store->put($key, $token, self::TOKEN_TTL_SECONDS);
+        $this->store->put($key, $token, self::TOKEN_TTL_SECONDS);
 
         return $token;
     }
@@ -132,7 +134,7 @@ final class Client
         $response = $this->send($path, $body, $this->token($serviceCode));
 
         if ($response->status === 401) {
-            ($this->tokens ?? $this->defaultTokens())->forget('ecobank.token.' . strtolower($serviceCode));
+            $this->store->forget($this->cacheKey($serviceCode));
             $response = $this->send($path, $body, $this->token($serviceCode));
         }
 
@@ -167,10 +169,27 @@ final class Client
             ->post(rtrim($this->config->baseUrl, '/') . $path, $headers, $body);
     }
 
-    private function defaultTokens(): TokenStore
+    /**
+     * The cache key for one token.
+     *
+     * It names the identity the token was minted for, not just the service. A token is
+     * issued to one clientId, under one affiliate and one source code; a key that omits
+     * them lets a second set of credentials read the first one's token out of a shared
+     * store and spend it. That is not hypothetical — a partner integration holds one set
+     * of credentials per affiliate, and the TokenStore seam exists precisely so the cache
+     * can be Redis, shared by every worker in the fleet.
+     *
+     * The secret key is deliberately absent: a cache key is not a secret, and stores get
+     * dumped, logged and browsed.
+     */
+    private function cacheKey(string $serviceCode): string
     {
-        static $store = null;
-
-        return $store ??= new InMemoryTokenStore();
+        return strtolower(implode('.', [
+            'ecobank.token',
+            $this->config->clientId,
+            $this->config->affiliateCode,
+            $this->config->sourceCode,
+            $serviceCode,
+        ]));
     }
 }

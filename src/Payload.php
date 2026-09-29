@@ -9,8 +9,8 @@ namespace Izy\EcobankPayout;
  *
  * Separated from transport on purpose: a signed payload has to be readable without being
  * emitted — a payment order is not something to fire in order to find out what it looks
- * like. It is also what makes the signatures testable, and they have to be, because the
- * sandbox does not check them.
+ * like. It is also what makes the signatures testable, and they have to be: the demo
+ * credentials everyone starts with do not check them (see Signature).
  *
  * Every payload has the same two-part shape: a `headerRequest` carrying the partner's
  * identity and the request token, and then the endpoint's own fields plus `secureHash`.
