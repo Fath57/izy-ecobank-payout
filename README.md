@@ -437,10 +437,17 @@ time to find.
 - **`documentation/service-code` and `documentation/request-type` are served empty.** The
   second would list every `requestType`. The three used here were read off the operation
   pages instead.
-- **The authentication page's "Base URL" contradicts its own operation URL.** The banner
-  says `https://artxuat.ecobank.com/corp-api/services/api/v2/integration/auth/`; the
-  operation below it says `https://apimuat-gateway.ecobank.com/corp-auth/…`. The
-  operation URL is the one that works.
+- **The authentication page shows two different base URLs.** The banner says
+  `https://artxuat.ecobank.com/corp-api/services/api/v2/integration/auth/`; the operation
+  below it says `https://apimuat-gateway.ecobank.com/corp-auth/…`. This was listed here
+  as a defect, on the assumption that the banner was stale. It is not: measured 29 Sep
+  2026, **both hosts answer, identically** — same JSON, same response codes, same tokens
+  for the same credentials. Treat them as two addresses for one service, and prefer the
+  operation URL because that is the one the rest of this document uses.
+- **A third address is not an API at all.** `apimuat-developer.ecobank.com` is the
+  developer portal: it answers `404` and `text/html` on every API path tried. Credential
+  sheets that give it as the "UAT base URL" mean the portal you log into, not the host you
+  call.
 - **`amount` is declared optional** (`required: false`) on the domestic transfer schema.
   Treat that as an error in their specification rather than as permission.
 - **The Bulk Account Transfer formula ends its `hashString` with `public_key`** where
