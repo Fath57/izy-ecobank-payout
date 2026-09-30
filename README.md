@@ -32,8 +32,12 @@ Authorization: Bearer <token>                     ← partner gate
 A wrong subscription key gives HTTP 401. A wrong signature gives HTTP 200 with an error
 in the body. They look nothing alike, which helps.
 
-`ipAddress` is signed, so configure it — do not detect it. A container behind a proxy
-reports a different address after each restart and the signature stops matching.
+`ipAddress` is part of the signed header but the bank does not verify it: measured
+30 Sep 2026, a transfer declaring `NOT-AN-IP` was accepted, and the token call and the
+payment it authorises may declare different addresses. Send the calling server's real
+public address anyway — that is what Ecobank whitelists, at network level on the
+connection rather than on this field. Configure it rather than detecting it: a container
+behind a proxy reports an internal address that changes on restart.
 
 ### Base URL
 

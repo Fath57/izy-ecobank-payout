@@ -17,7 +17,7 @@ final class Configuration
      * @param  string  $sourceCode  partner source code, issued at onboarding
      * @param  string  $publicKey  sent in the token request body
      * @param  string  $secretKey  never sent; hashed into both signatures
-     * @param  string  $ipAddress  our address as the bank sees it. It is signed, so it
+     * @param  string  $ipAddress  the address we declare; signed, but not verified by the bank
      * @param  string  $currency  ISO code of the transfer, e.g. XOF or GHS. A currency
      */
     public function __construct(
