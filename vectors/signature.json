@@ -88,9 +88,9 @@
     },
     {
       "name": "TRAP — hashing in document order is wrong",
-      "why": "The payload starts affiliateCode then clientId; the hash starts clientId then affiliateCode. This value is what you get by concatenating the JSON top-down. A port that produces it has the order wrong.",
+      "why": "The payload starts affiliateCode then clientId, and ipAddress then requestType; the hash reverses both pairs. wrongConcatenation is the JSON read top-down and wrongValue is its digest. correctValue is what the same inputs must actually produce. Your implementation must return correctValue, never wrongValue.",
       "wrongConcatenation": "EGHCL001CORP_CIB_MOBILEIZYABCDEFGH1234192.168.1.1DOMESTIC_TRANSFERtest-secret-key-not-a-real-one",
-      "mustNotEqual": "4871ccc7d3290616750e5ab676927cf746789e42933610e9169862f8f10467704264a72b6f441faec5921505c0ff343a7b4c6284fbecd7faab620c259f6ed10f",
+      "correctValue": "4871ccc7d3290616750e5ab676927cf746789e42933610e9169862f8f10467704264a72b6f441faec5921505c0ff343a7b4c6284fbecd7faab620c259f6ed10f",
       "wrongValue": "de4ec95d58e549e2c23f1da1a8c50716d30f3490d327491717916a6bfe8f675d91b302733a97e559b446873c7eacbe6f1689a84d79dcab0097b6b1c994fcd3fe"
     },
     {

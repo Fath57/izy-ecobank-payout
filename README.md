@@ -225,13 +225,15 @@ the document-order mistake produces, which a correct implementation must never o
 
 ```
 for each case with an expected digest:
-    assert sha512_hex(case.concatenated) == case.expected        # your hashing
-    assert join(your_parts(case)) + secret == case.concatenated  # your field order
-assert sha512_hex(trap.wrongConcatenation) == trap.wrongValue    # must not be your output
+    assert sha512_hex(case.concatenated) == case.expected         # your hashing
+    assert join(your_parts(case)) + secret == case.concatenated   # your field order
+    assert your_digest(case) == case.expected                     # the two together
+
+assert your_digest(trap.header) != trap.wrongValue                # you did not read the JSON top-down
 ```
 
 The second assertion is the one that matters: a port can hash correctly and still
-concatenate in the document's order.
+concatenate in the document's order, and only this one separates the two faults.
 
 **Do not trust an end-to-end success instead.** Signature checking is per client app: the
 demo app in Ecobank's documentation issues a token no matter what you sign, while a real

@@ -55,17 +55,17 @@ final class SignatureTest extends TestCase
             'The recorded wrong value no longer matches its own concatenation.'
         );
 
-        $this->assertNotSame(
-            $case['wrongValue'],
-            (new Signature($vectors['secretKey']))->requestToken([
-                'affiliateCode' => 'EGH',
-                'clientId' => 'CL001',
-                'sourceCode' => 'CORP_CIB_MOBILE',
-                'requestId' => 'IZYABCDEFGH1234',
-                'ipAddress' => '192.168.1.1',
-                'requestType' => 'DOMESTIC_TRANSFER',
-            ]),
-        );
+        $ours = (new Signature($vectors['secretKey']))->requestToken([
+            'affiliateCode' => 'EGH',
+            'clientId' => 'CL001',
+            'sourceCode' => 'CORP_CIB_MOBILE',
+            'requestId' => 'IZYABCDEFGH1234',
+            'ipAddress' => '192.168.1.1',
+            'requestType' => 'DOMESTIC_TRANSFER',
+        ]);
+
+        $this->assertNotSame($case['wrongValue'], $ours, 'Document order: the JSON was read top-down.');
+        $this->assertSame($case['correctValue'], $ours);
     }
 
     /**
