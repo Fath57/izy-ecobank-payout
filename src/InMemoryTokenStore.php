@@ -4,12 +4,7 @@ declare(strict_types=1);
 
 namespace Izy\EcobankPayout;
 
-/**
- * A TokenStore that lives as long as the process.
- *
- * The default, so the package works with no infrastructure. It is enough for a script or
- * a test and wrong for a fleet of workers, each of which would hold its own token.
- */
+/** A TokenStore that lives as long as the process. */
 final class InMemoryTokenStore implements TokenStore
 {
     /** @var array<string, array{token: string, expiresAt: int}> */

@@ -4,31 +4,7 @@ declare(strict_types=1);
 
 namespace Izy\EcobankPayout;
 
-/**
- * The three calls a payout integration makes, in the order it makes them.
- *
- *     $client = new Client($configuration);
- *
- *     $order  = $client->domesticTransfer('1441002006858', 10.0, 'Payout 42');
- *     $ref    = $order['transactionReference'];   // store this, not your own requestId
- *     $status = $client->transactionStatus($ref);
- *
- * Four behaviours worth reproducing in any port, none of which is visible in the API
- * schema:
- *
- * 1. **The verdict is in the body.** This API answers HTTP 200 to a refused request and
- *    puts the reason in `headerResponse.responseCode`; "000" is the only success.
- *
- * 2. **An acknowledgement is not a confirmation.** A successful transfer call means the
- *    order was accepted, not that the money moved. Do not mark a payout as sent here —
- *    poll transactionStatus() and let that decide.
- *
- * 3. **Mint the requestId before the call and keep it.** If the answer is lost you must
- *    retry with the same one; a fresh one looks like a second transfer.
- *
- * 4. **Tokens are per service and expire in minutes.** Cache by serviceCode, drop on a
- *    401, and retry exactly once. Looping would spin forever on a revoked credential.
- */
+/** The three calls a payout integration makes, in the order it makes them. */
 final class Client
 {
     public const PATH_TOKEN = '/corp-auth/api/v2/integration/auth/app/token';
@@ -37,12 +13,7 @@ final class Client
 
     public const PATH_TRANSACTION_STATUS = '/corp-payment/api/v2/integration/payment/status';
 
-    /**
-     * Well inside the documented five minutes.
-     *
-     * The gap absorbs the time between minting a token and spending it; an expiry met
-     * mid-batch costs one retry rather than a failed payout.
-     */
+    /** Well inside the documented five minutes. */
     public const TOKEN_TTL_SECONDS = 180;
 
     private readonly Payload $payload;
@@ -64,9 +35,7 @@ final class Client
         return $this->payload;
     }
 
-    /**
-     * A bearer token for one service, reused while it is fresh.
-     */
+    /** A bearer token for one service, reused while it is fresh. */
     public function token(string $serviceCode = ServiceCode::DOMESTIC): string
     {
         $key = $this->cacheKey($serviceCode);
@@ -110,10 +79,6 @@ final class Client
 
     /**
      * Asks what became of an order already sent.
-     *
-     * Treat anything that is not an explicit failure as still pending: an unknown
-     * reference and a transfer in flight look the same from here, and calling either a
-     * failure would refund a merchant whose money is on its way.
      *
      * @return array<string, mixed>
      */
@@ -170,17 +135,8 @@ final class Client
     }
 
     /**
-     * The cache key for one token.
-     *
-     * It names the identity the token was minted for, not just the service. A token is
-     * issued to one clientId, under one affiliate and one source code; a key that omits
-     * them lets a second set of credentials read the first one's token out of a shared
-     * store and spend it. That is not hypothetical — a partner integration holds one set
-     * of credentials per affiliate, and the TokenStore seam exists precisely so the cache
-     * can be Redis, shared by every worker in the fleet.
-     *
-     * The secret key is deliberately absent: a cache key is not a secret, and stores get
-     * dumped, logged and browsed.
+     * Keyed by identity, not just by service: a shared store would otherwise
+     * hand one credential set's token to another.
      */
     private function cacheKey(string $serviceCode): string
     {

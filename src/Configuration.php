@@ -4,26 +4,12 @@ declare(strict_types=1);
 
 namespace Izy\EcobankPayout;
 
-/**
- * What Ecobank hands a partner at onboarding, plus the gateway address.
- *
- * Two gates guard every call, and they are unrelated — confusing them costs an afternoon:
- *
- * - the **subscription key** goes in the `Ocp-Apim-Subscription-Key` header and says
- *   which product of the developer portal we are calling through. It is read from the
- *   portal's Profile page, per subscription.
- * - the **bearer token** says who we are and which service we may use. It is obtained
- *   from the authentication endpoint and lives about five minutes.
- *
- * A call missing either is refused, and the two refusals do not distinguish themselves.
- *
- * The **secret key never travels**: it only ever enters the two SHA-512 strings. The
- * publicKey does travel, in the body of the token request. The names look alike and the
- * roles are opposite.
- */
+/** What Ecobank hands a partner at onboarding, plus the gateway address. */
 final class Configuration
 {
     /**
+     * must be identical between the token request and the payment it authorises.
+     *
      * @param  string  $baseUrl  gateway root, e.g. https://apimuat-gateway.ecobank.com
      * @param  string  $subscriptionKey  portal Profile → subscription → primary key
      * @param  string  $clientId  partner identifier, issued at onboarding
@@ -32,13 +18,7 @@ final class Configuration
      * @param  string  $publicKey  sent in the token request body
      * @param  string  $secretKey  never sent; hashed into both signatures
      * @param  string  $ipAddress  our address as the bank sees it. It is signed, so it
-     *                             must be identical between the token request and the
-     *                             payment it authorises. Configure it rather than detect
-     *                             it: a container behind a proxy reports an internal
-     *                             address that changes on restart, and the mismatch
-     *                             surfaces only as a refused signature.
      * @param  string  $currency  ISO code of the transfer, e.g. XOF or GHS. A currency
-     *                            the affiliate does not settle in is refused.
      */
     public function __construct(
         public readonly string $baseUrl,
@@ -59,10 +39,6 @@ final class Configuration
 
     /**
      * Refuses an incomplete configuration before the first call rather than after.
-     *
-     * An empty secret key produces a signature that is well formed and wrong, and the
-     * bank answers with a generic rejection that sends everyone looking at the payload
-     * instead of the configuration.
      *
      * @throws EcobankException when a value is missing
      */

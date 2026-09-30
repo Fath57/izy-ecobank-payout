@@ -4,12 +4,7 @@ declare(strict_types=1);
 
 namespace Izy\EcobankPayout;
 
-/**
- * A dependency-free Transport, so the package runs on its own.
- *
- * Fine for a script or a test; a host application should implement Transport over
- * whatever client it already uses, and keep its own retry and observability policy.
- */
+/** A dependency-free Transport, so the package runs on its own. */
 final class CurlTransport implements Transport
 {
     public function __construct(

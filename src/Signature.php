@@ -5,52 +5,20 @@ declare(strict_types=1);
 namespace Izy\EcobankPayout;
 
 /**
- * The two signatures every Ecobank call carries.
+ * The two SHA-512 signatures every call carries. Lower-case hex, 128 chars, UTF-8.
  *
- *     requestToken = SHA-512( clientId + affiliateCode + sourceCode + requestId
- *                           + requestType + ipAddress + secretKey )
+ *     requestToken = SHA512( HEADER + secretKey )
+ *     secureHash   = SHA512( HEADER + requestToken + <endpoint fields> + secretKey )
+ *     HEADER       = clientId + affiliateCode + sourceCode + requestId + requestType + ipAddress
  *
- *     secureHash   = SHA-512( <the same six> + requestToken
- *                           + <the endpoint's own fields> + secretKey )
+ * Not an HMAC: the secret is concatenated, then the whole string is hashed.
  *
- * SHA-512, lower-case hex, 128 characters, over UTF-8 bytes.
- *
- * This is NOT an HMAC. The secret key is plainly concatenated at the end of the string
- * and the whole thing is hashed. A port that reaches for the host language's HMAC API
- * will produce a different digest.
- *
- * Three traps, each pinned by a case in vectors/signature.json:
- *
- * 1. requestToken feeds secureHash. Compute the first, then concatenate it into the
- *    second. Computing both in parallel from the same inputs yields two well-formed
- *    digests that the bank rejects together, with no indication of which is wrong.
- *
- * 2. The hashed order is not the JSON order. The payload starts `affiliateCode`,
- *    `clientId`; the hash starts `clientId`, `affiliateCode`. Concatenating the document
- *    top-down — which is exactly what the previous Ecobank API required — silently
- *    produces the wrong digest here.
- *
- * 3. The amount is hashed as a string, and that string must match what lands in the JSON
- *    body. See amountString().
- *
- * Whether the bank checks any of this depends on the client app, not on the environment.
- * The demo app in Ecobank's own documentation (CL001) issues a token however you sign —
- * measured 13 and 29 Sep 2026, a secret wrong by one character still returns SUCCESS. A
- * real onboarded app answers `Invalid SecureHash or Request Token Provided` to the same
- * mutation.
- *
- * So a green round trip against the demo credentials says nothing, and the vectors are
- * the only check that exists until real credentials arrive. Once they do, the bank itself
- * becomes the check: any error that is *not* about the hash means the signature passed.
+ * Traps, each pinned by a case in vectors/signature.json: requestToken goes inside
+ * secureHash; the hashed field order is not the JSON order; the amount is hashed as text.
  */
 final class Signature
 {
-    /**
-     * The six header values, in the order the formula concatenates them.
-     *
-     * Named here rather than read from the payload's own order: the payload orders them
-     * differently, and relying on it is the mistake this list prevents.
-     */
+    /** The concatenation order, which differs from the payload's own order. */
     public const HEADER_ORDER = [
         'clientId', 'affiliateCode', 'sourceCode', 'requestId', 'requestType', 'ipAddress',
     ];
@@ -66,13 +34,7 @@ final class Signature
     }
 
     /**
-     * The payload signature: the header, then the request token, then the endpoint's own
-     * values in the order its documentation lists them.
-     *
-     * Every endpoint has its own field list. The one for a domestic transfer is
-     * receiverAccountNo + amountString + currency + description; a status query is just
-     * the transaction reference. Reusing one endpoint's list for another is a silent
-     * failure — the digest is well formed and refused.
+     * The header, then the request token, then the endpoint's own values.
      *
      * @param  array<string, string>  $header  the headerRequest, without requestToken
      * @param  list<string>  $fields  the endpoint's own values, in the documented order
@@ -82,17 +44,7 @@ final class Signature
         return $this->hash([...$this->headerValues($header), $requestToken, ...$fields]);
     }
 
-    /**
-     * How an amount enters the hashed string.
-     *
-     * The documentation writes `amountString`. Its rendering has to match the JSON body:
-     * if the body carries 50000 and the signature hashes "50000.00", the bank hashes one
-     * string and we hashed another, and the only feedback is "Invalid Request Token".
-     *
-     * In PHP, json_encode(50000.0) renders `50000`, and so does this. A port must check
-     * the same equivalence in its own language before trusting it — several render a
-     * float as "50000.0".
-     */
+    /** The hashed rendering of an amount. It must equal what the JSON body carries. */
     public static function amountString(float $amount): string
     {
         return rtrim(rtrim(number_format($amount, 2, '.', ''), '0'), '.');

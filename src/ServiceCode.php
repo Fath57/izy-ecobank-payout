@@ -4,14 +4,7 @@ declare(strict_types=1);
 
 namespace Izy\EcobankPayout;
 
-/**
- * What a token opens.
- *
- * Chosen when requesting the token, not when spending it. This list comes from the
- * authentication service page of the developer portal; it is longer than what a payout
- * integration uses. Only DOMESTIC, INTERBANK and ACCOUNT_TRANSFER are accepted by the
- * transaction-status endpoint.
- */
+/** What a token opens. */
 final class ServiceCode
 {
     /** Pool account to an Ecobank account in the same country. What a payout uses. */

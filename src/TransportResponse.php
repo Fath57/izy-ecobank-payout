@@ -4,13 +4,7 @@ declare(strict_types=1);
 
 namespace Izy\EcobankPayout;
 
-/**
- * What came back: the HTTP status, and the decoded body.
- *
- * Both are kept because neither is sufficient. The status separates an expired token
- * (401) from everything else; the body carries `headerResponse.responseCode`, which is
- * the actual verdict — "000" and nothing else means success.
- */
+/** What came back: the HTTP status, and the decoded body. */
 final class TransportResponse
 {
     /** @param array<string, mixed> $body */
@@ -31,11 +25,7 @@ final class TransportResponse
         return (string) ($this->body['headerResponse']['responseDesc'] ?? '');
     }
 
-    /**
-     * The bank's verdict, which is not the HTTP status.
-     *
-     * Reading the status alone would book a refused transfer as sent.
-     */
+    /** The bank's verdict, which is not the HTTP status. */
     public function isSuccess(): bool
     {
         return $this->responseCode() === '000';
