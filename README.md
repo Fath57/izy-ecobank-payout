@@ -119,7 +119,9 @@ POST /corp-auth/api/v2/integration/auth/app/token
 one service is refused by the others, so **cache per service, not globally** — and per
 identity, or two credential sets will share one token.
 
-Lifetime is about five minutes. `expires_in` is a millisecond timestamp, not a duration.
+`expires_in` is an absolute millisecond timestamp, not a duration. Measured lifetime is
+**five hours**, not the five minutes the documentation states. An expired token is
+refused with **HTTP 403**, the same as an invalid one — not 401.
 
 ---
 
@@ -191,6 +193,7 @@ Queried by the reference **the bank returned**, not by your `requestId`.
 | `000` | Success — the only one |
 | `400` | Malformed request; `responseDesc` names the field |
 | `401` | Authentication failed — where a wrong signature lands |
+| `403` | **The token was refused** — expired or invalid. Renew and retry once; renewing only on 401 never renews (measured 1 Oct 2026) |
 | `404` | Not found |
 | `999` | Refused or failed; read `responseDesc` |
 

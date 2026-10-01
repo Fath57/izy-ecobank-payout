@@ -10,6 +10,7 @@ use Izy\EcobankPayout\InMemoryTokenStore;
 use Izy\EcobankPayout\Transport;
 use Izy\EcobankPayout\TokenStore;
 use Izy\EcobankPayout\TransportResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -78,6 +79,37 @@ class ClientTokenCacheTest extends TestCase
         $this->assertNotEmpty($store->keys);
     }
 
+    /**
+     * An expired token is refused with 403, not 401.
+     *
+     * Measured 01/10/2026: a token five hours past its expiry answers 403 "Access denied",
+     * the same as an invalid one. A client that renews only on 401 never renews, and every
+     * call fails until the cache entry lapses on its own.
+     */
+    #[DataProvider('tokenRejections')]
+    public function test_a_rejected_token_is_renewed_once(int $status): void
+    {
+        $transport = new RejectingTransport($status);
+
+        try {
+            (new Client($this->config('CL001', 'EGH'), $transport))->domesticTransfer('1', 1.0, 'test');
+        } catch (\Throwable) {
+            // The second attempt is refused too; what is under test is that it happened.
+        }
+
+        $this->assertSame(
+            ['token', 'call', 'token', 'call'],
+            $transport->kinds,
+            "HTTP $status did not trigger a token renewal"
+        );
+    }
+
+    /** @return array<string, array{int}> */
+    public static function tokenRejections(): array
+    {
+        return ['401 Unauthorized' => [401], '403 Access denied' => [403]];
+    }
+
     private function config(string $clientId, string $affiliate): Configuration
     {
         return new Configuration(
@@ -134,5 +166,32 @@ final class SpyingTokenStore implements TokenStore
     public function forget(string $key): void
     {
         $this->inner->forget($key);
+    }
+}
+
+/** Answers every call with the same token-rejection status, recording what was asked. */
+final class RejectingTransport implements Transport
+{
+    /** @var list<string> */
+    public array $kinds = [];
+
+    public function __construct(private readonly int $status) {}
+
+    public function post(string $url, array $headers, array $body): TransportResponse
+    {
+        if (str_contains($url, '/auth/app/token')) {
+            $this->kinds[] = 'token';
+
+            return new TransportResponse(200, [
+                'headerResponse' => ['responseCode' => '000'],
+                'data' => ['access_token' => 'token-' . count($this->kinds)],
+            ]);
+        }
+
+        $this->kinds[] = 'call';
+
+        return new TransportResponse($this->status, [
+            'headerResponse' => ['responseCode' => (string) $this->status, 'responseDesc' => 'Access denied'],
+        ]);
     }
 }

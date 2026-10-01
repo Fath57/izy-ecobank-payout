@@ -13,8 +13,16 @@ final class Client
 
     public const PATH_TRANSACTION_STATUS = '/corp-payment/api/v2/integration/payment/status';
 
-    /** Well inside the documented five minutes. */
+    /** Well inside the measured five hours, and inside the five minutes the docs claim. */
     public const TOKEN_TTL_SECONDS = 180;
+
+    /**
+     * Statuses that mean the token, not the request, was refused.
+     *
+     * 403 and not only 401: measured 01/10/2026, an expired token answers 403 "Access
+     * denied", exactly as an invalid one does. Retrying on 401 alone never renews.
+     */
+    private const TOKEN_REJECTED = [401, 403];
 
     private readonly Payload $payload;
 
@@ -98,7 +106,7 @@ final class Client
     {
         $response = $this->send($path, $body, $this->token($serviceCode));
 
-        if ($response->status === 401) {
+        if (in_array($response->status, self::TOKEN_REJECTED, true)) {
             $this->store->forget($this->cacheKey($serviceCode));
             $response = $this->send($path, $body, $this->token($serviceCode));
         }
